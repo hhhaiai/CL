@@ -1,14 +1,11 @@
-# CL
+package cm.customlayout.demo;
 
-custom layout 
+import android.app.Activity;
+import android.os.Bundle;
+import android.util.Log;
+import android.view.View;
+import me.hhhaiai.customlayout.CRelativeLayout;
 
-## 组件和用法
-
-### 自定义相对页面
-
-* CRelativeLayout
-
-``` java
 public class MainActivity extends Activity {
     private static final String TAG = "MainActivity";
     private CRelativeLayout mLayout = null;
@@ -31,4 +28,3 @@ public class MainActivity extends Activity {
         setContentView(mLayout);
     }
 }
-```
