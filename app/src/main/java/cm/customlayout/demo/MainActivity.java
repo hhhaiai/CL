@@ -24,7 +24,7 @@ public class MainActivity extends Activity {
                         break;
                 }
             }
-        }, 4, 3);
+        }, 4, 30);
         setContentView(mLayout);
     }
 }

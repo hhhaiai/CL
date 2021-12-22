@@ -1,6 +1,8 @@
 package me.hhhaiai.customlayout;
 
+import android.app.Activity;
 import android.content.Context;
+import android.graphics.Color;
 import android.os.Handler;
 import android.os.HandlerThread;
 import android.os.Looper;
@@ -8,8 +10,10 @@ import android.os.Message;
 import android.text.TextUtils;
 import android.text.method.ScrollingMovementMethod;
 import android.util.Log;
+import android.view.Display;
 import android.widget.Button;
 import android.widget.RelativeLayout;
+import android.widget.ScrollView;
 import android.widget.TextView;
 
 import java.security.MessageDigest;
@@ -29,32 +33,36 @@ import java.security.MessageDigest;
 public class CRelativeLayout extends RelativeLayout {
 
     public static final String Version = "v2.0";
-    private Context mContext = null;
+    private Activity mContext = null;
     private OnClickListener mOnClickListener = null;
     //    public static final int BASE_INDEX = 9000;
     // 每行几个按钮
     private int itemCountInLine = 4;
     private String TAG = "MRelativeLayout";
 
-    public CRelativeLayout(Context context) {
+    public CRelativeLayout(Activity context) {
         super(context);
         mContext = context;
         initHandler();
     }
 
     /**
-     * @param context
+     * @param act
      * @param clickListener      按钮点击回调
      * @param itemCountInOneLine 每行按钮个数
      * @param lineCount          行数
      */
-    public CRelativeLayout(Context context, OnClickListener clickListener, int itemCountInOneLine, int lineCount) {
-        super(context);
-        mContext = context;
+    public CRelativeLayout(Activity act, OnClickListener clickListener, int itemCountInOneLine, int lineCount) {
+        super(act);
+        mContext = act;
         mOnClickListener = clickListener;
         this.itemCountInLine = itemCountInOneLine;
-        addOneGroup(lineCount);
+
+        LayoutParams params = new LayoutParams(
+                LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT);
+        setLayoutParams(params);
         addTextView();
+        addOneGroup(lineCount);
         initHandler();
     }
 
@@ -166,22 +174,69 @@ public class CRelativeLayout extends RelativeLayout {
             lod(TAG, "addOneGroup has not group");
             return;
         }
+        // add
+        ScrollView sv = new ScrollView(mContext);
+        sv.setFillViewport(false);
+        sv.setBackgroundColor(Color.RED);
+        LayoutParams params = new LayoutParams(
+//                LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT);
+                LayoutParams.MATCH_PARENT, getH());
+        sv.setLayoutParams(params);
+        addView(sv);
+
+        RelativeLayout rl = new RelativeLayout(mContext);
+        LayoutParams pr = new LayoutParams(
+                LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT);
+        rl.setBackgroundColor(Color.BLUE);
+        rl.setLayoutParams(pr);
+        sv.addView(rl);
         for (int i = 1; i <= groupCount; i++) {
             int index = (i - 1) * itemCountInLine + 1;
             for (int j = 0; j < itemCountInLine; j++) {
-                firstLine(index, j);
+                firstLine(rl, index, j);
             }
         }
     }
 
+    private int getH() {
+        Display display = mContext.getWindowManager().getDefaultDisplay();
+        int height = display.getHeight();
+        int actionBarH = mContext.getActionBar().getHeight();
+        return height - actionBarH - getStatusBarHeight(mContext);
+    }
+
+    /**
+     * 获取状态栏高度
+     *
+     * @return
+     */
+    public static int getStatusBarHeight(Context context) {
+        Class<?> c = null;
+        Object obj = null;
+        java.lang.reflect.Field field = null;
+        int x = 0;
+        int statusBarHeight = 0;
+        try {
+            c = Class.forName("com.android.internal.R$dimen");
+            obj = c.newInstance();
+            field = c.getField("status_bar_height");
+            x = Integer.parseInt(field.get(obj).toString());
+            statusBarHeight = context.getResources().getDimensionPixelSize(x);
+            return statusBarHeight;
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return statusBarHeight;
+    }
 
     /**
      * 自动增加组件
      *
+     * @param rrl
      * @param lineIndex   第几行
      * @param indexInLine 每行第几个元素
      */
-    private void firstLine(int lineIndex, int indexInLine) {
+    private void firstLine(RelativeLayout rrl, int lineIndex, int indexInLine) {
 //        int id = BASE_INDEX + lineIndex + indexInLine;
         int id = lineIndex + indexInLine;
         Button btn = new Button(mContext);
@@ -208,7 +263,12 @@ public class CRelativeLayout extends RelativeLayout {
             btn.setOnClickListener(mOnClickListener);
         }
 
-        addView(btn);
+//        if (rrl == null) {
+//            addView(btn);
+//        } else {
+        rrl.addView(btn);
+//        }
+
     }
 
     private void lod(String tag, String info) {
