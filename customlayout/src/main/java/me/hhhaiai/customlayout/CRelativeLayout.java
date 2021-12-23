@@ -1,8 +1,8 @@
 package me.hhhaiai.customlayout;
 
 import android.app.Activity;
-import android.content.Context;
-import android.graphics.Color;
+import android.content.res.Resources;
+import android.os.Build;
 import android.os.Handler;
 import android.os.HandlerThread;
 import android.os.Looper;
@@ -10,7 +10,9 @@ import android.os.Message;
 import android.text.TextUtils;
 import android.text.method.ScrollingMovementMethod;
 import android.util.Log;
+import android.util.TypedValue;
 import android.view.Display;
+import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.RelativeLayout;
 import android.widget.ScrollView;
@@ -32,13 +34,14 @@ import java.security.MessageDigest;
  */
 public class CRelativeLayout extends RelativeLayout {
 
-    public static final String Version = "v2.0";
+    public static final String Version = "3.0";
     private Activity mContext = null;
     private OnClickListener mOnClickListener = null;
     //    public static final int BASE_INDEX = 9000;
     // 每行几个按钮
     private int itemCountInLine = 4;
-    private String TAG = "MRelativeLayout";
+    private String TAG = "CL";
+    private int textViewHeight = 600;
 
     public CRelativeLayout(Activity context) {
         super(context);
@@ -132,6 +135,7 @@ public class CRelativeLayout extends RelativeLayout {
     }
 
 
+
     /**
      * 增加TextView
      */
@@ -144,7 +148,7 @@ public class CRelativeLayout extends RelativeLayout {
         tv.setBackgroundColor(0xFF85C1E9);
         tv.setId(tvID);
         tv.setLayoutParams(params);
-        tv.setHeight(600);
+        tv.setHeight(textViewHeight);
         tv.setText("Hello, This's a Textview");
         tv.setMovementMethod(ScrollingMovementMethod.getInstance());
         addView(tv);
@@ -174,22 +178,23 @@ public class CRelativeLayout extends RelativeLayout {
             lod(TAG, "addOneGroup has not group");
             return;
         }
-        // add
+        // add ScrollView to view
         ScrollView sv = new ScrollView(mContext);
         sv.setFillViewport(false);
-        sv.setBackgroundColor(Color.RED);
+//        sv.setBackgroundColor(Color.RED);
         LayoutParams params = new LayoutParams(
 //                LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT);
                 LayoutParams.MATCH_PARENT, getH());
         sv.setLayoutParams(params);
         addView(sv);
-
+        // add RelativeLayout in ScrollView
         RelativeLayout rl = new RelativeLayout(mContext);
         LayoutParams pr = new LayoutParams(
                 LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT);
-        rl.setBackgroundColor(Color.BLUE);
+//        rl.setBackgroundColor(Color.BLUE);
         rl.setLayoutParams(pr);
         sv.addView(rl);
+
         for (int i = 1; i <= groupCount; i++) {
             int index = (i - 1) * itemCountInLine + 1;
             for (int j = 0; j < itemCountInLine; j++) {
@@ -202,7 +207,52 @@ public class CRelativeLayout extends RelativeLayout {
         Display display = mContext.getWindowManager().getDefaultDisplay();
         int height = display.getHeight();
         int actionBarH = mContext.getActionBar().getHeight();
-        return height - actionBarH - getStatusBarHeight(mContext);
+        if (actionBarH == 0) {
+            actionBarH = getActionBarHeight();
+        }
+        int statusBarHeight = getStatusBarHeightA();
+        if (statusBarHeight == 0) {
+            statusBarHeight = getStatusBarHeightB();
+        }
+        int navigationBarHeight = getNavigationBarHeight();
+        loe("sanbo", "height:" + height
+                + ", actionBarH:" + actionBarH
+                + ", statusBarHeight:" + statusBarHeight
+                + ", navigationBarHeight:" + navigationBarHeight
+        );
+//        return height - actionBarH - statusBarHeight - navigationBarHeight - textViewHeight;
+        return height - actionBarH - statusBarHeight - textViewHeight;
+    }
+
+    //获取底部 (Navigation Bar) 高度
+    public int getNavigationBarHeight() {
+        Resources resources = mContext.getResources();
+        int resourceId = resources.getIdentifier("navigation_bar_height", "dimen", "android");
+        return resources.getDimensionPixelSize(resourceId);
+    }
+
+    //https://www.codenong.com/12301510/
+    private int getActionBarHeight() {
+        int actionBarHeight = 0;
+        TypedValue tv = new TypedValue();
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.HONEYCOMB) {
+            if (mContext.getTheme().resolveAttribute(android.R.attr.actionBarSize, tv,
+                    true)) {
+                actionBarHeight = TypedValue.complexToDimensionPixelSize(
+                        tv.data, getResources().getDisplayMetrics());
+            }
+        } else {
+            actionBarHeight = TypedValue.complexToDimensionPixelSize(tv.data,
+                    getResources().getDisplayMetrics());
+        }
+        return actionBarHeight;
+    }
+
+    //获取顶部（Status Bar） 高度
+    public int getStatusBarHeightB() {
+        Resources resources = mContext.getResources();
+        int resourceId = resources.getIdentifier("status_bar_height", "dimen", "android");
+        return resources.getDimensionPixelSize(resourceId);
     }
 
     /**
@@ -210,7 +260,7 @@ public class CRelativeLayout extends RelativeLayout {
      *
      * @return
      */
-    public static int getStatusBarHeight(Context context) {
+    public int getStatusBarHeightA() {
         Class<?> c = null;
         Object obj = null;
         java.lang.reflect.Field field = null;
@@ -221,7 +271,7 @@ public class CRelativeLayout extends RelativeLayout {
             obj = c.newInstance();
             field = c.getField("status_bar_height");
             x = Integer.parseInt(field.get(obj).toString());
-            statusBarHeight = context.getResources().getDimensionPixelSize(x);
+            statusBarHeight = mContext.getResources().getDimensionPixelSize(x);
             return statusBarHeight;
         } catch (Exception e) {
             e.printStackTrace();
@@ -232,11 +282,11 @@ public class CRelativeLayout extends RelativeLayout {
     /**
      * 自动增加组件
      *
-     * @param rrl
+     * @param grout
      * @param lineIndex   第几行
      * @param indexInLine 每行第几个元素
      */
-    private void firstLine(RelativeLayout rrl, int lineIndex, int indexInLine) {
+    private void firstLine(ViewGroup grout, int lineIndex, int indexInLine) {
 //        int id = BASE_INDEX + lineIndex + indexInLine;
         int id = lineIndex + indexInLine;
         Button btn = new Button(mContext);
@@ -263,12 +313,11 @@ public class CRelativeLayout extends RelativeLayout {
             btn.setOnClickListener(mOnClickListener);
         }
 
-//        if (rrl == null) {
-//            addView(btn);
-//        } else {
-        rrl.addView(btn);
-//        }
-
+        if (grout == null) {
+            addView(btn);
+        } else {
+            grout.addView(btn);
+        }
     }
 
     private void lod(String tag, String info) {
