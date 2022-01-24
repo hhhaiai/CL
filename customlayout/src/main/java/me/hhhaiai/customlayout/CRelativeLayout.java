@@ -21,9 +21,11 @@ import android.widget.TextView;
 import java.security.MessageDigest;
 
 
+
 /**
  * @Copyright © 2021 sanbo Inc. All rights reserved.
  * @Description: 自定义相对页面<p />
+ * 3.0: 支持按钮部分更多数量，以滑动+相对布局实现
  * 2.0: 增加每列个数动态配置，去除基础参考ID
  * 1.2: 支持大体积的消息回显，增加回显内容验证
  * 1.1: 页面增加消息回显模快，内部每列动态调整为4个按钮
@@ -206,7 +208,12 @@ public class CRelativeLayout extends RelativeLayout {
     private int getH() {
         Display display = mContext.getWindowManager().getDefaultDisplay();
         int height = display.getHeight();
-        int actionBarH = mContext.getActionBar().getHeight();
+        int actionBarH = 0;
+        try {
+            actionBarH = mContext.getActionBar().getHeight();
+        } catch (Throwable e) {
+            e.printStackTrace();
+        }
         if (actionBarH == 0) {
             actionBarH = getActionBarHeight();
         }
