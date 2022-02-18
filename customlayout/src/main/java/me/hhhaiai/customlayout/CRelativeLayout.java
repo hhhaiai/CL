@@ -12,6 +12,7 @@ import android.text.TextUtils;
 import android.text.method.ScrollingMovementMethod;
 import android.util.Log;
 import android.util.TypedValue;
+import android.view.Display;
 import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.RelativeLayout;
@@ -187,7 +188,7 @@ public class CRelativeLayout extends RelativeLayout {
 //        sv.setBackgroundColor(Color.RED);
         LayoutParams params = new LayoutParams(
 //                LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT);
-                LayoutParams.MATCH_PARENT, getH(mContext));
+                LayoutParams.MATCH_PARENT, getH());
         sv.setLayoutParams(params);
         addView(sv);
         // add RelativeLayout in ScrollView
@@ -205,69 +206,69 @@ public class CRelativeLayout extends RelativeLayout {
             }
         }
     }
-     int statusBarHeight = -1;
-    public  int getH(Context context) {
-        if (statusBarHeight != -1) {
-            return statusBarHeight;
-        }
-
-        int resId = context.getResources().getIdentifier("status_bar_height", "dimen", "android");
-        if (resId > 0) {
-            statusBarHeight = context.getResources().getDimensionPixelSize(resId);
-        }
-
-        if (statusBarHeight < 0) {
-            int result = 0;
-            try {
-                Class<?> clazz = Class.forName("com.android.internal.R$dimen");
-                Object obj = clazz.newInstance();
-                Field field = clazz.getField("status_bar_height");
-                int resourceId = Integer.parseInt(field.get(obj).toString());
-                result = context.getResources().getDimensionPixelSize(resourceId);
-            } catch (Exception e) {
-            } finally {
-                statusBarHeight = result;
-            }
-        }
-
-        //Use 25dp if no status bar height found
-        if (statusBarHeight < 0) {
-            statusBarHeight = dip2px(context, 25);
-        }
-        return statusBarHeight;
-    }
-
-    private  int dip2px(Context context, float dpValue) {
-        float scale = context.getResources().getDisplayMetrics().density;
-        int px = (int) (dpValue * scale + 0.5f);
-        return px;
-    }
-
-//    private int getH() {
-//        Display display = mContext.getWindowManager().getDefaultDisplay();
-//        int height = display.getHeight();
-//        int actionBarH = 0;
-//        try {
-//            actionBarH = mContext.getActionBar().getHeight();
-//        } catch (Throwable e) {
-//            e.printStackTrace();
+//     int statusBarHeight = -1;
+//    public  int getH(Context context) {
+//        if (statusBarHeight != -1) {
+//            return statusBarHeight;
 //        }
-//        if (actionBarH == 0) {
-//            actionBarH = getActionBarHeight();
+//
+//        int resId = context.getResources().getIdentifier("status_bar_height", "dimen", "android");
+//        if (resId > 0) {
+//            statusBarHeight = context.getResources().getDimensionPixelSize(resId);
 //        }
-//        int statusBarHeight = getStatusBarHeightA();
-//        if (statusBarHeight == 0) {
-//            statusBarHeight = getStatusBarHeightB();
+//
+//        if (statusBarHeight < 0) {
+//            int result = 0;
+//            try {
+//                Class<?> clazz = Class.forName("com.android.internal.R$dimen");
+//                Object obj = clazz.newInstance();
+//                Field field = clazz.getField("status_bar_height");
+//                int resourceId = Integer.parseInt(field.get(obj).toString());
+//                result = context.getResources().getDimensionPixelSize(resourceId);
+//            } catch (Exception e) {
+//            } finally {
+//                statusBarHeight = result;
+//            }
 //        }
-//        int navigationBarHeight = getNavigationBarHeight();
-//        loe("sanbo", "height:" + height
-//                + ", actionBarH:" + actionBarH
-//                + ", statusBarHeight:" + statusBarHeight
-//                + ", navigationBarHeight:" + navigationBarHeight
-//        );
-////        return height - actionBarH - statusBarHeight - navigationBarHeight - textViewHeight;
-//        return height - actionBarH - statusBarHeight - textViewHeight;
+//
+//        //Use 25dp if no status bar height found
+//        if (statusBarHeight < 0) {
+//            statusBarHeight = dip2px(context, 25);
+//        }
+//        return statusBarHeight;
 //    }
+//
+//    private  int dip2px(Context context, float dpValue) {
+//        float scale = context.getResources().getDisplayMetrics().density;
+//        int px = (int) (dpValue * scale + 0.5f);
+//        return px;
+//    }
+
+    private int getH() {
+        Display display = mContext.getWindowManager().getDefaultDisplay();
+        int height = display.getHeight();
+        int actionBarH = 0;
+        try {
+            actionBarH = mContext.getActionBar().getHeight();
+        } catch (Throwable e) {
+            e.printStackTrace();
+        }
+        if (actionBarH == 0) {
+            actionBarH = getActionBarHeight();
+        }
+        int statusBarHeight = getStatusBarHeightA();
+        if (statusBarHeight == 0) {
+            statusBarHeight = getStatusBarHeightB();
+        }
+        int navigationBarHeight = getNavigationBarHeight();
+        loe("sanbo", "height:" + height
+                + ", actionBarH:" + actionBarH
+                + ", statusBarHeight:" + statusBarHeight
+                + ", navigationBarHeight:" + navigationBarHeight
+        );
+//        return height - actionBarH - statusBarHeight - navigationBarHeight - textViewHeight;
+        return height - actionBarH - statusBarHeight - textViewHeight;
+    }
 
     //获取底部 (Navigation Bar) 高度
     public int getNavigationBarHeight() {
