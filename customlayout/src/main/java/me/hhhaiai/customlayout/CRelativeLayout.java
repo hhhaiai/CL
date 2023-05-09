@@ -1,7 +1,6 @@
 package me.hhhaiai.customlayout;
 
 import android.app.Activity;
-import android.content.Context;
 import android.content.res.Resources;
 import android.os.Build;
 import android.os.Handler;
@@ -19,14 +18,15 @@ import android.widget.RelativeLayout;
 import android.widget.ScrollView;
 import android.widget.TextView;
 
-import java.lang.reflect.Field;
 import java.security.MessageDigest;
-
+import java.util.HashMap;
+import java.util.Map;
 
 
 /**
  * @Copyright © 2021 sanbo Inc. All rights reserved.
  * @Description: 自定义相对页面<p />
+ * 4.0: 支持按钮文字调整
  * 3.0: 支持按钮部分更多数量，以滑动+相对布局实现
  * 2.0: 增加每列个数动态配置，去除基础参考ID
  * 1.2: 支持大体积的消息回显，增加回显内容验证
@@ -38,8 +38,8 @@ import java.security.MessageDigest;
  */
 public class CRelativeLayout extends RelativeLayout {
 
-    public static final String Version = "3.0";
-    private Activity mContext = null;
+    public static final String Version = "4.0";
+    private Activity mAct = null;
     private OnClickListener mOnClickListener = null;
     //    public static final int BASE_INDEX = 9000;
     // 每行几个按钮
@@ -47,9 +47,17 @@ public class CRelativeLayout extends RelativeLayout {
     private String TAG = "CL";
     private int textViewHeight = 600;
 
+    private HandlerThread thread;
+    private Handler mHandler;
+    private TextView tv = null;
+    private int tvID = 0x66601;
+    private String mShowMsg = "";
+    private Map<Integer, Button> idAndButtons = new HashMap<Integer, Button>();
+
+
     public CRelativeLayout(Activity context) {
         super(context);
-        mContext = context;
+        mAct = context;
         initHandler();
     }
 
@@ -61,7 +69,7 @@ public class CRelativeLayout extends RelativeLayout {
      */
     public CRelativeLayout(Activity act, OnClickListener clickListener, int itemCountInOneLine, int lineCount) {
         super(act);
-        mContext = act;
+        mAct = act;
         mOnClickListener = clickListener;
         this.itemCountInLine = itemCountInOneLine;
 
@@ -73,16 +81,37 @@ public class CRelativeLayout extends RelativeLayout {
         initHandler();
     }
 
-    private HandlerThread thread;
-    private Handler mHandler;
-    private TextView tv = null;
-    private int tvID = 0x66601;
-    private String mShowMsg = "";
+    /**
+     * 将ID的文字进行调整
+     * @param id
+     * @param info
+     * @return
+     */
+    public CRelativeLayout bind(int id, String info) {
+        try {
+            if (TextUtils.isEmpty(info) || !idAndButtons.containsKey(id)) {
+                loe(TAG, "bind(" + id + ", " + info + ") failed!");
+                return this;
+            }
+            idAndButtons.get(id).setText(info);
+        } catch (Throwable e) {
+            loe(TAG, Log.getStackTraceString(e));
+        }
+        return this;
+    }
 
     private void initHandler() {
         if (thread == null) {
-            thread = new HandlerThread("mt",
-                    android.os.Process.THREAD_PRIORITY_FOREGROUND);
+            thread = new HandlerThread("clht_" + System.nanoTime(),
+//                    // 这是linux下的线程优先级,取值范围:[-20,19],-20优先级最高,19优先级最低
+//                    Process.THREAD_PRIORITY_FOREGROUND
+//                            //| Process.THREAD_PRIORITY_BACKGROUND
+//                            | Process.THREAD_PRIORITY_AUDIO
+//                            | Process.THREAD_PRIORITY_VIDEO
+//                            | Process.THREAD_PRIORITY_DISPLAY
+//                            | Process.THREAD_PRIORITY_MORE_FAVORABLE
+                    -20
+            );
             thread.start();
         }
         if (mHandler == null) {
@@ -91,7 +120,7 @@ public class CRelativeLayout extends RelativeLayout {
 
     }
 
-    public static final String md5(final String toEncrypt) {
+    private static final String md5(final String toEncrypt) {
         try {
             final MessageDigest digest = MessageDigest.getInstance("md5");
             digest.update(toEncrypt.getBytes());
@@ -108,7 +137,8 @@ public class CRelativeLayout extends RelativeLayout {
 
     class RHandler extends Handler {
         public RHandler(Looper looper) {
-            super(Looper.getMainLooper());
+//            super(Looper.getMainLooper());
+            super(looper);
         }
 
         @Override
@@ -144,7 +174,7 @@ public class CRelativeLayout extends RelativeLayout {
      * 增加TextView
      */
     private void addTextView() {
-        tv = new TextView(mContext);
+        tv = new TextView(mAct);
         LayoutParams params = new LayoutParams(
                 //int w, int h
                 LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT);
@@ -183,7 +213,7 @@ public class CRelativeLayout extends RelativeLayout {
             return;
         }
         // add ScrollView to view
-        ScrollView sv = new ScrollView(mContext);
+        ScrollView sv = new ScrollView(mAct);
         sv.setFillViewport(false);
 //        sv.setBackgroundColor(Color.RED);
         LayoutParams params = new LayoutParams(
@@ -192,7 +222,7 @@ public class CRelativeLayout extends RelativeLayout {
         sv.setLayoutParams(params);
         addView(sv);
         // add RelativeLayout in ScrollView
-        RelativeLayout rl = new RelativeLayout(mContext);
+        RelativeLayout rl = new RelativeLayout(mAct);
         LayoutParams pr = new LayoutParams(
                 LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT);
 //        rl.setBackgroundColor(Color.BLUE);
@@ -245,11 +275,11 @@ public class CRelativeLayout extends RelativeLayout {
 //    }
 
     private int getH() {
-        Display display = mContext.getWindowManager().getDefaultDisplay();
+        Display display = mAct.getWindowManager().getDefaultDisplay();
         int height = display.getHeight();
         int actionBarH = 0;
         try {
-            actionBarH = mContext.getActionBar().getHeight();
+            actionBarH = mAct.getActionBar().getHeight();
         } catch (Throwable e) {
             e.printStackTrace();
         }
@@ -261,18 +291,18 @@ public class CRelativeLayout extends RelativeLayout {
             statusBarHeight = getStatusBarHeightB();
         }
         int navigationBarHeight = getNavigationBarHeight();
-        loe("sanbo", "height:" + height
-                + ", actionBarH:" + actionBarH
-                + ", statusBarHeight:" + statusBarHeight
-                + ", navigationBarHeight:" + navigationBarHeight
-        );
+//        loe("sanbo", "height:" + height
+//                + ", actionBarH:" + actionBarH
+//                + ", statusBarHeight:" + statusBarHeight
+//                + ", navigationBarHeight:" + navigationBarHeight
+//        );
 //        return height - actionBarH - statusBarHeight - navigationBarHeight - textViewHeight;
         return height - actionBarH - statusBarHeight - textViewHeight;
     }
 
     //获取底部 (Navigation Bar) 高度
     public int getNavigationBarHeight() {
-        Resources resources = mContext.getResources();
+        Resources resources = mAct.getResources();
         int resourceId = resources.getIdentifier("navigation_bar_height", "dimen", "android");
         return resources.getDimensionPixelSize(resourceId);
     }
@@ -282,7 +312,7 @@ public class CRelativeLayout extends RelativeLayout {
         int actionBarHeight = 0;
         TypedValue tv = new TypedValue();
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.HONEYCOMB) {
-            if (mContext.getTheme().resolveAttribute(android.R.attr.actionBarSize, tv,
+            if (mAct.getTheme().resolveAttribute(android.R.attr.actionBarSize, tv,
                     true)) {
                 actionBarHeight = TypedValue.complexToDimensionPixelSize(
                         tv.data, getResources().getDisplayMetrics());
@@ -296,7 +326,7 @@ public class CRelativeLayout extends RelativeLayout {
 
     //获取顶部（Status Bar） 高度
     public int getStatusBarHeightB() {
-        Resources resources = mContext.getResources();
+        Resources resources = mAct.getResources();
         int resourceId = resources.getIdentifier("status_bar_height", "dimen", "android");
         return resources.getDimensionPixelSize(resourceId);
     }
@@ -317,13 +347,14 @@ public class CRelativeLayout extends RelativeLayout {
             obj = c.newInstance();
             field = c.getField("status_bar_height");
             x = Integer.parseInt(field.get(obj).toString());
-            statusBarHeight = mContext.getResources().getDimensionPixelSize(x);
+            statusBarHeight = mAct.getResources().getDimensionPixelSize(x);
             return statusBarHeight;
         } catch (Exception e) {
             e.printStackTrace();
         }
         return statusBarHeight;
     }
+
 
     /**
      * 自动增加组件
@@ -335,7 +366,7 @@ public class CRelativeLayout extends RelativeLayout {
     private void firstLine(ViewGroup grout, int lineIndex, int indexInLine) {
 //        int id = BASE_INDEX + lineIndex + indexInLine;
         int id = lineIndex + indexInLine;
-        Button btn = new Button(mContext);
+        Button btn = new Button(mAct);
         btn.setId(id);
         LayoutParams params = new LayoutParams(
                 LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT);
@@ -364,6 +395,7 @@ public class CRelativeLayout extends RelativeLayout {
         } else {
             grout.addView(btn);
         }
+        idAndButtons.put(id, btn);
     }
 
     private void lod(String tag, String info) {

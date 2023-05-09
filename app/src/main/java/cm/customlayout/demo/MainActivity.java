@@ -21,11 +21,16 @@ public class MainActivity extends Activity {
                     case 1:
                         Log.i(TAG, "click one");
                         break;
+                    case 2:
+                        Log.i(TAG, "click two");
+                        break;
                     default:
                         break;
                 }
             }
         }, 4, 30);
+        mLayout.bind(1, "改1")
+                .bind(2, "改2");
         setContentView(mLayout);
     }
 }
